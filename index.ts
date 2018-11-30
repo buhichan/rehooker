@@ -1,27 +1,22 @@
 import * as React from 'react';
-import { Subject,Observable,BehaviorSubject } from 'rxjs';
-import {map, distinctUntilChanged, tap, scan} from "rxjs/operators"
+import { Subject,Observable, BehaviorSubject } from 'rxjs';
+import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
 export function createStore<T>(defaultState:T){
-    let currentState = defaultState
     type Mutation = (t:T)=>T
-    const subject = new BehaviorSubject<Mutation>(v=>v)
-    const stream = subject.pipe(
+    const mutations = new Subject<Mutation>()
+    const stream = new BehaviorSubject(defaultState)
+
+    mutations.pipe(
         scan<Mutation,T>((state,mutation)=>{
             return mutation(state)
         },defaultState),
-        tap(v=>{
-            currentState = v
-        })
-    )
+    ).subscribe(stream)
 
     return {
-        getState(){
-            return currentState
-        },
         stream,
         next(m:Mutation){
-            subject.next(m)
+            mutations.next(m)
         },
     }
 }
