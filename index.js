@@ -35,12 +35,15 @@ function createStore(defaultState) {
 exports.createStore = createStore;
 function useSink(operation, deps) {
     if (deps === void 0) { deps = []; }
-    var sub = React.useMemo(function () { return new rxjs_1.Subject(); }, deps);
+    var _a = React.useMemo(function () {
+        var sub = new rxjs_1.Subject();
+        return [sub, sub.next.bind(sub)];
+    }, deps), sub = _a[0], next = _a[1];
     React.useEffect(function () {
         operation(sub);
         return function () { return sub.complete(); };
-    }, deps);
-    return sub.next.bind(sub);
+    }, [sub]);
+    return next;
 }
 exports.useSink = useSink;
 function useObservable(ob) {

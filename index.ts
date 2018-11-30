@@ -35,12 +35,15 @@ export function createStore<T>(defaultState:T){
 }
 
 export function useSink<T>(operation:(sub:Subject<T>)=>void,deps:any[]=[]):Subject<T>['next']{
-    const sub = React.useMemo(()=>new Subject<T>(),deps)
+    const [sub,next] = React.useMemo<[Subject<T>,Subject<T>['next']]>(()=>{
+        const sub = new Subject<T>()
+        return [sub,sub.next.bind(sub)]
+    },deps)
     React.useEffect(()=>{
         operation(sub)
         return ()=>sub.complete()
-    },deps)
-    return sub.next.bind(sub)
+    },[sub])
+    return next
 }
 
 export function useObservable<T>(ob:Observable<T>){
