@@ -4,7 +4,7 @@ State management powered by rxjs and react hooks.
 # API
 
 - ```createStore(defaultState)```
-    - create a store with 4 methods:
+    - create a store with these methods:
         - `getState()`
             - get current state.
         - `stream`  
@@ -12,8 +12,6 @@ State management powered by rxjs and react hooks.
         - `dispatch(Mutation | Promise<Mutation> | Observable<Mutation>):void`
             - Mutation is (previousState)=>nextState
             - dispatch a mutation to change the current state.
-        - `dispose():void`
-            - dispose the store
 
 - `useSink(operation:(sub:Subject<T>), dependencies: any[]): (value:T)=>void`
     - a hook that creates a event handler which calls the underlying rxjs Subject's next()

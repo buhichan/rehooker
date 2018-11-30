@@ -4,14 +4,13 @@ var React = require("react");
 var rxjs_1 = require("rxjs");
 var operators_1 = require("rxjs/operators");
 function createStore(defaultState) {
-    var currentState;
-    var subject = new rxjs_1.Subject();
-    var stream = subject.pipe(operators_1.reduce(function (state, mutation) {
+    var currentState = defaultState;
+    var subject = new rxjs_1.BehaviorSubject(function (v) { return v; });
+    var stream = subject.pipe(operators_1.scan(function (state, mutation) {
         return mutation(state);
-    }, defaultState));
-    var sub = stream.subscribe(function (v) {
+    }, defaultState), operators_1.tap(function (v) {
         currentState = v;
-    });
+    }));
     return {
         getState: function () {
             return currentState;
@@ -26,9 +25,6 @@ function createStore(defaultState) {
             }
             else
                 subject.next(maybeMutation);
-        },
-        dispose: function () {
-            sub.unsubscribe();
         }
     };
 }
