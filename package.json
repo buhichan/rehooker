@@ -1,0 +1,32 @@
+{
+  "name": "rehooker",
+  "version": "0.0.1",
+  "description": "React state management powered by rxjs and react hooks.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p .",
+    "version": "npm run build && git add -A",
+    "postversion": "git push && git push --tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:buhi/rehooker.git"
+  },
+  "keywords": [
+    "redux",
+    "react"
+  ],
+  "author": "buhi",
+  "license": "MIT",
+  "dependencies": {
+    "react": "*",
+    "rxjs": "^6.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.17",
+    "@types/react": "*",
+    "tslib": "^1.8.0",
+    "typescript": "^3.2.1"
+  }
+}

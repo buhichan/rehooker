@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "noStrictGenericChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "keyofStringsOnly":true,
+    "strict": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "jsx":"react",
+    "lib":["es6","scripthost","dom","es2016.array.include","es2015.promise"]
+  },
+  "exclude": [
+    "example",
+    "node_modules"
+  ]
+}
