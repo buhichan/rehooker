@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Subject,Observable,isObservable,from, BehaviorSubject } from 'rxjs';
+import { Subject,Observable,BehaviorSubject } from 'rxjs';
 import {map, distinctUntilChanged, tap, scan} from "rxjs/operators"
 
 export function createStore<T>(defaultState:T){
@@ -20,14 +20,9 @@ export function createStore<T>(defaultState:T){
             return currentState
         },
         stream,
-        dispatch(maybeMutation:Observable<Mutation> | Promise<Mutation> | Mutation){
-            if(isObservable(maybeMutation)){
-                maybeMutation.subscribe(subject)
-            }else if(maybeMutation instanceof Promise){
-                from(maybeMutation).subscribe(subject)
-            }else
-                subject.next(maybeMutation)
-        }
+        next(m:Mutation){
+            subject.next(m)
+        },
     }
 }
 

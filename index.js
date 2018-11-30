@@ -16,16 +16,9 @@ function createStore(defaultState) {
             return currentState;
         },
         stream: stream,
-        dispatch: function (maybeMutation) {
-            if (rxjs_1.isObservable(maybeMutation)) {
-                maybeMutation.subscribe(subject);
-            }
-            else if (maybeMutation instanceof Promise) {
-                rxjs_1.from(maybeMutation).subscribe(subject);
-            }
-            else
-                subject.next(maybeMutation);
-        }
+        next: function (m) {
+            subject.next(m);
+        },
     };
 }
 exports.createStore = createStore;

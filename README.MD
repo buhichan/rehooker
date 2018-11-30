@@ -9,7 +9,7 @@ State management powered by rxjs and react hooks.
             - get current state.
         - `stream`  
             - get the rxjs observable of state.
-        - `dispatch(Mutation | Promise<Mutation> | Observable<Mutation>):void`
+        - `next(Mutation):void`
             - Mutation is (previousState)=>nextState
             - dispatch a mutation to change the current state.
 
