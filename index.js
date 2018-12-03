@@ -4,15 +4,16 @@ var React = require("react");
 var rxjs_1 = require("rxjs");
 var operators_1 = require("rxjs/operators");
 function createStore(defaultState) {
-    var mutations = new rxjs_1.Subject();
-    var stream = new rxjs_1.BehaviorSubject(defaultState);
-    mutations.pipe(operators_1.scan(function (state, mutation) {
+    // const mutations = new Subject<Mutation<T>>()
+    var subject = new rxjs_1.BehaviorSubject(function (v) { return v; });
+    var stream = subject.pipe(operators_1.scan(function (state, mutation) {
         return mutation(state);
-    }, defaultState)).subscribe(stream);
+    }, defaultState), operators_1.share());
+    stream.subscribe();
     return {
         stream: stream,
         next: function (m) {
-            mutations.next(m);
+            subject.next(m);
         },
     };
 }

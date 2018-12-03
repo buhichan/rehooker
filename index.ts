@@ -2,22 +2,28 @@ import * as React from 'react';
 import { Subject,Observable, BehaviorSubject } from 'rxjs';
 import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
-export function createStore<T>(defaultState:T){
-    type Mutation = (t:T)=>T
-    const mutations = new Subject<Mutation>()
+type Mutation<T> = (t:T)=>T
+
+type Store<T> = {
+    stream:Observable<T>,
+    next(m:Mutation<T>):void
+}
+
+export function createStore<T>(defaultState:T):Store<T>{
+    const mutations = new Subject<Mutation<T>>()
     const stream = new BehaviorSubject(defaultState)
 
     mutations.pipe(
-        scan<Mutation,T>((state,mutation)=>{
+        scan<Mutation<T>,T>((state,mutation)=>{
             return mutation(state)
         },defaultState),
     ).subscribe(stream)
 
     return {
         stream,
-        next(m:Mutation){
+        next(m){
             mutations.next(m)
-        },
+        }
     }
 }
 
@@ -39,7 +45,7 @@ export function useObservable<T>(ob:Observable<T>){
         const sub = ob.subscribe(setValue)
         return sub.unsubscribe.bind(sub)
     },[ob])
-    return value as T
+    return value
 }
 
 export function useSource<State,Slice=State>(ob:Observable<State>,operator:(s:Observable<State>)=>Observable<Slice>=map(x=>x as any),deps:any[]=[]){
