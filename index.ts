@@ -2,9 +2,9 @@ import * as React from 'react';
 import { Subject,Observable, BehaviorSubject } from 'rxjs';
 import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
-type Mutation<T> = (t:T)=>T
+export type Mutation<T> = (t:T)=>T
 
-type Store<T> = {
+export type Store<T> = {
     stream:Observable<T>,
     next(m:Mutation<T>):void
 }
