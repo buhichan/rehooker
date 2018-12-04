@@ -4,6 +4,7 @@ var React = require("react");
 var rxjs_1 = require("rxjs");
 var operators_1 = require("rxjs/operators");
 function createStore(defaultState, middleware) {
+    if (middleware === void 0) { middleware = rxjs_1.identity; }
     var mutations = new rxjs_1.Subject();
     var stream = new rxjs_1.BehaviorSubject(defaultState);
     mutations.pipe(middleware, operators_1.scan(function (state, mutation) {

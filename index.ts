@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Subject,Observable, BehaviorSubject, OperatorFunction } from 'rxjs';
+import { Subject,Observable, BehaviorSubject, OperatorFunction, identity } from 'rxjs';
 import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
 export type Mutation<T> = (t:T)=>T
@@ -10,7 +10,7 @@ export type Store<T> = {
     destroy():void
 }
 
-export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>):Store<T>{
+export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>=identity):Store<T>{
     const mutations = new Subject<Mutation<T>>()
     const stream = new BehaviorSubject(defaultState)
 
