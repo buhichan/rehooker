@@ -3,16 +3,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var React = require("react");
 var rxjs_1 = require("rxjs");
 var operators_1 = require("rxjs/operators");
-function createStore(defaultState) {
+function createStore(defaultState, middleware) {
     var mutations = new rxjs_1.Subject();
     var stream = new rxjs_1.BehaviorSubject(defaultState);
-    mutations.pipe(operators_1.scan(function (state, mutation) {
+    mutations.pipe(middleware, operators_1.scan(function (state, mutation) {
         return mutation(state);
     }, defaultState)).subscribe(stream);
     return {
         stream: stream,
         next: function (m) {
             mutations.next(m);
+        },
+        //we don't use the name `complete` because it will cause store to terminate when you use pattern like .subscribe(store)
+        destroy: function () {
+            mutations.complete();
+            stream.complete();
         }
     };
 }

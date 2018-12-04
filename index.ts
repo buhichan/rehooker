@@ -1,28 +1,35 @@
 import * as React from 'react';
-import { Subject,Observable, BehaviorSubject } from 'rxjs';
+import { Subject,Observable, BehaviorSubject, OperatorFunction } from 'rxjs';
 import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
 export type Mutation<T> = (t:T)=>T
 
 export type Store<T> = {
     stream:Observable<T>,
-    next(m:Mutation<T>):void
+    next(m:Mutation<T>):void,
+    destroy():void
 }
 
-export function createStore<T>(defaultState:T):Store<T>{
+export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>):Store<T>{
     const mutations = new Subject<Mutation<T>>()
     const stream = new BehaviorSubject(defaultState)
 
     mutations.pipe(
+        middleware,
         scan<Mutation<T>,T>((state,mutation)=>{
             return mutation(state)
-        },defaultState),
+        },defaultState)
     ).subscribe(stream)
 
     return {
         stream,
         next(m){
             mutations.next(m)
+        },
+        //we don't use the name `complete` because it will cause store to terminate when you use pattern like .subscribe(store)
+        destroy(){ 
+            mutations.complete()
+            stream.complete()
         }
     }
 }
