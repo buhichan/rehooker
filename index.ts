@@ -5,7 +5,7 @@ import {map, distinctUntilChanged, scan} from "rxjs/operators"
 export type Mutation<T> = (t:T)=>T
 
 export type Store<T> = {
-    stream:Observable<T>,
+    stream:BehaviorSubject<T>,
     next(m:Mutation<T>):void,
     destroy():void
 }
