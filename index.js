@@ -19,6 +19,9 @@ function createStore(defaultState, middleware) {
         destroy: function () {
             mutations.complete();
             stream.complete();
+        },
+        use: function () {
+            return useObservable(stream) || stream.value;
         }
     };
 }

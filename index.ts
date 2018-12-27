@@ -7,7 +7,8 @@ export type Mutation<T> = (t:T)=>T
 export type Store<T> = {
     stream:BehaviorSubject<T>,
     next(m:Mutation<T>):void,
-    destroy():void
+    destroy():void,
+    use():T
 }
 
 export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>=identity):Store<T>{
@@ -30,6 +31,9 @@ export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutat
         destroy(){ 
             mutations.complete()
             stream.complete()
+        },
+        use(){
+            return useObservable(stream) || stream.value
         }
     }
 }
