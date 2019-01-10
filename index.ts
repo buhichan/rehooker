@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Subject,Observable, BehaviorSubject, OperatorFunction, identity } from 'rxjs';
+import { Subject,Observable, BehaviorSubject, OperatorFunction, identity, Subscription } from 'rxjs';
 import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
 export type Mutation<T> = (t:T)=>T
@@ -38,15 +38,18 @@ export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutat
     }
 }
 
-export function useSink<T>(operation:(sub:Subject<T>)=>void,deps:any[]=[]):Subject<T>['next']{
-    const [sub,next] = React.useMemo<[Subject<T>,Subject<T>['next']]>(()=>{
-        const sub = new Subject<T>()
-        return [sub,sub.next.bind(sub)]
+export function useSink<T>(operation:(sub:Subject<T>)=>Subscription,deps:any[]=[]):Subject<T>['next']{
+    const [subject,next] = React.useMemo<[Subject<T>,Subject<T>['next']]>(()=>{
+        const subject = new Subject<T>()
+        return [subject,subject.next.bind(subject)]
     },deps)
     React.useEffect(()=>{
-        operation(sub)
-        return ()=>sub.complete()
-    },[sub])
+        const subscription:Subscription = operation(subject)
+        return ()=>{
+            subject.complete()
+            subscription.unsubscribe() //this is to prevent leak when operation fn contains some operation like combineLatest
+        }
+    },[subject])
     return next
 }
 

@@ -29,13 +29,16 @@ exports.createStore = createStore;
 function useSink(operation, deps) {
     if (deps === void 0) { deps = []; }
     var _a = React.useMemo(function () {
-        var sub = new rxjs_1.Subject();
-        return [sub, sub.next.bind(sub)];
-    }, deps), sub = _a[0], next = _a[1];
+        var subject = new rxjs_1.Subject();
+        return [subject, subject.next.bind(subject)];
+    }, deps), subject = _a[0], next = _a[1];
     React.useEffect(function () {
-        operation(sub);
-        return function () { return sub.complete(); };
-    }, [sub]);
+        var subscription = operation(subject);
+        return function () {
+            subject.complete();
+            subscription.unsubscribe(); //this is to prevent leak when operation fn contains some operation like combineLatest
+        };
+    }, [subject]);
     return next;
 }
 exports.useSink = useSink;
