@@ -77,6 +77,9 @@ function shallowEqual(a:any,b:any){
         return true
     if(a==undefined || b==undefined)
         return false
+    if(typeof a !== 'object'){
+        return a === b
+    }
     const ka = Object.keys(a)
     const kb = Object.keys(b)
     if(ka.length !== kb.length)
