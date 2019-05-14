@@ -61,17 +61,15 @@ function useSource(ob, operator, deps) {
 }
 exports.useSource = useSource;
 function shallowEqual(a, b) {
-    if (a === b)
-        return true;
-    if (a == undefined || b == undefined)
-        return false;
-    if (typeof a !== 'object') {
+    if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
         return a === b;
     }
-    var ka = Object.keys(a);
-    var kb = Object.keys(b);
-    if (ka.length !== kb.length)
-        return false;
-    return ka.every(function (k) { return a[k] === b[k]; });
+    else {
+        var ka = Object.keys(a);
+        var kb = Object.keys(b);
+        if (ka.length !== kb.length)
+            return false;
+        return ka.every(function (k) { return a[k] === b[k]; });
+    }
 }
 //# sourceMappingURL=index.js.map

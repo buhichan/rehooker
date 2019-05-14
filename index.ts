@@ -73,16 +73,13 @@ export function useSource<State,Slice=State>(ob:Observable<State>,operator:(s:Ob
 }
 
 function shallowEqual(a:any,b:any){
-    if(a===b)
-        return true
-    if(a==undefined || b==undefined)
-        return false
-    if(typeof a !== 'object'){
+    if(typeof a !== 'object' || a === null || typeof b !== 'object' || b === null){
         return a === b
+    }else{
+        const ka = Object.keys(a)
+        const kb = Object.keys(b)
+        if(ka.length !== kb.length)
+            return false
+        return ka.every(k=>a[k] === b[k])
     }
-    const ka = Object.keys(a)
-    const kb = Object.keys(b)
-    if(ka.length !== kb.length)
-        return false
-    return ka.every(k=>a[k] === b[k])
 }
