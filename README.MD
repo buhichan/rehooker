@@ -5,8 +5,8 @@ State management powered by rxjs and react hooks.
 
 - ```createStore(defaultState)```
     - create a store with these methods:
-        - `getState()`
-            - get current state.
+        - `user()`
+            - a hook that subscribes the latest state.
         - `stream`  
             - get the rxjs observable of state.
         - `next(Mutation):void`
@@ -29,38 +29,39 @@ State management powered by rxjs and react hooks.
 
 # Example
 ```tsx
-import {createStore, get, useSubject} from "guguder"
+import {createStore, useSource, useSink} from "rehooker"
 import * as React from "react"
-import { Http } from './service/http';
 import { from } from 'rxjs';
 import { debounceTime, map, tap } from 'rxjs/operators';
 
-const peopleStore = createStore([] as any[])
+const userStore = createStore({
+    users: [] as any[]
+})
 
-const http = Http("https://swapi.co/api",{
-    headers:{
-        'content-type':"application/json"
+const http = {
+    get:(url)=>{
+        return fetch(url).then(res=>res.json()).then(x=>x.DataSet)
     }
-},res=>res.json())
-
-const getPeople = ()=>useSubject(
-    v=>v.pipe(
-        tap((e)=>{
-            console.log(e)
-        }),
-        debounceTime(300),
-        map(()=>from(http.get('/people/1/') as Promise<any[]>)),
-    ).subscribe(v=>{
-        peopleStore.dispatch(v.pipe(map(v=>()=>v)))
-    })
-)
+}
 
 export function App(){
-    const people = get(peopleStore.stream)
+    const {users} = userStore.use() //this is a short hand for const {users} = useSource(userStore.stream,[]) || userStore.stream.value
+    const getUser = useSink(subject=>subject.pipe( //click event is converted to rxjs subject
+        tap((e)=>{
+            console.log('button clicked, click event is: ', e)
+        }),
+        debounceTime(300), // click event is debounced
+        switchMap(()=>from(http.get('/people/1/') as Promise<any[]>)),
+    ).subscribe(v=>{
+        userStore.next(oldState=>({
+            ...oldState,
+            users:v
+        }))
+    }),[])
     return <div>
-        <button onClick={getPeople()}>getPeople</button>
+        <button onClick={getUser}>debounced getUser</button>
         <pre>
-            {JSON.stringify(people)}
+            {JSON.stringify(users)}
         </pre>
     </div>
 }
