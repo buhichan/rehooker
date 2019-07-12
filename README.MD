@@ -5,7 +5,7 @@ State management powered by rxjs and react hooks.
 
 - ```createStore(defaultState)```
     - create a store with these methods:
-        - `user()`
+        - `use()`
             - a hook that subscribes the latest state.
         - `stream`  
             - get the rxjs observable of state.
