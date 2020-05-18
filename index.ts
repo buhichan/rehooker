@@ -4,14 +4,35 @@ import {map, distinctUntilChanged, scan} from "rxjs/operators"
 
 export type Mutation<T> = (t:T)=>T
 
-export type Store<T> = {
+export type MapToUnion<T> = T[keyof T];
+
+export type MapToAction<T> = {
+  [K in keyof T]: {
+    type: K;
+    payload: T[K];
+  };
+};
+
+export type MapToConditionalAction<T> = MapToUnion<MapToAction<T>>;
+
+export interface Action<T = any> {
+  type: string | number | symbol;
+  payload?: T;
+}
+
+export interface Reducer<T, Action> {
+  (state: T, action: Action): T;
+}
+
+export type Store<T, PayloadType = {}> = {
     stream:BehaviorSubject<T>,
     next(m:Mutation<T>):void,
+    dispatch(action: MapToConditionalAction<PayloadType>):void,
     destroy():void,
     use():T
 }
 
-export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>=identity):Store<T>{
+export function createStore<T, PayloadType = {}>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>=identity, reducer: Reducer<T, MapToConditionalAction<PayloadType>> = s => s):Store<T, PayloadType>{
     const mutations = new Subject<Mutation<T>>()
     const stream = new BehaviorSubject(defaultState)
 
@@ -26,6 +47,9 @@ export function createStore<T>(defaultState:T, middleware:OperatorFunction<Mutat
         stream,
         next(m){
             mutations.next(m)
+        },
+        dispatch(action) {
+            mutations.next(state => reducer(state, action));
         },
         //we don't use the name `complete` because it will cause store to terminate when you use pattern like .subscribe(store)
         destroy(){ 

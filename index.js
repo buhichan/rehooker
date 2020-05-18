@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = require("tslib");
 var React = require("react");
 var rxjs_1 = require("rxjs");
 var operators_1 = require("rxjs/operators");
-function createStore(defaultState, middleware) {
+function createStore(defaultState, middleware, reducer) {
     if (middleware === void 0) { middleware = rxjs_1.identity; }
+    if (reducer === void 0) { reducer = function (s) { return s; }; }
     var mutations = new rxjs_1.Subject();
     var stream = new rxjs_1.BehaviorSubject(defaultState);
     mutations.pipe(middleware, operators_1.scan(function (state, mutation) {
@@ -14,6 +16,9 @@ function createStore(defaultState, middleware) {
         stream: stream,
         next: function (m) {
             mutations.next(m);
+        },
+        dispatch: function (action) {
+            mutations.next(function (state) { return reducer(state, action); });
         },
         //we don't use the name `complete` because it will cause store to terminate when you use pattern like .subscribe(store)
         destroy: function () {
@@ -56,7 +61,7 @@ function useSource(ob, operator, deps) {
     if (deps === void 0) { deps = []; }
     var selected = React.useMemo(function () {
         return ob.pipe(operator, operators_1.distinctUntilChanged(shallowEqual));
-    }, [ob].concat(deps));
+    }, tslib_1.__spreadArrays([ob], deps));
     return useObservable(selected);
 }
 exports.useSource = useSource;
