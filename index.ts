@@ -1,8 +1,8 @@
-import * as React from 'react';
-import { Subject,Observable, BehaviorSubject, OperatorFunction, identity, Subscription } from 'rxjs';
-import {map, distinctUntilChanged, scan} from "rxjs/operators"
+import * as React from "react";
+import { BehaviorSubject, combineLatest, identity, Observable, of, OperatorFunction, Subject, Subscription } from "rxjs";
+import { scan, skip, map, distinctUntilChanged } from "rxjs/operators";
 
-export type Mutation<T> = (t:T)=>T
+export type Mutation<T> = (t: T) => T;
 
 export type MapToUnion<T> = T[keyof T];
 
@@ -25,43 +25,127 @@ export interface Reducer<T, Action> {
 }
 
 export type Store<T, PayloadType = {}> = {
-    stream:BehaviorSubject<T>,
-    next(m:Mutation<T>):void,
-    dispatch(action: MapToConditionalAction<PayloadType>):void,
-    destroy():void,
-    use():T
+  readonly stream: BehaviorSubject<T>;
+  readonly value: T;
+  next(m: Mutation<T>): void;
+  dispatch(action: MapToConditionalAction<PayloadType>): void;
+  destroy(): void;
+  use(): T;
+};
+
+export function createStore<T, PayloadType = {}>(
+  defaultState: T,
+  middleware: OperatorFunction<Mutation<T>, Mutation<T>> = identity,
+  reducer: Reducer<T, MapToConditionalAction<PayloadType>> = (s) => s
+): Store<T, PayloadType> {
+  const mutations = new Subject<Mutation<T>>();
+  const stream = new BehaviorSubject(defaultState);
+
+  mutations
+    .pipe(
+      middleware,
+      scan<Mutation<T>, T>((state, mutation) => {
+        return mutation(state);
+      }, defaultState)
+    )
+    .subscribe(stream);
+
+  return {
+    get stream() {
+      return stream;
+    },
+    get value() {
+      return stream.value;
+    },
+    next(m) {
+      mutations.next(m);
+    },
+    dispatch(action) {
+      mutations.next((state) => reducer(state, action));
+    },
+    //we don't use the name `complete` because it will cause store to terminate when you use pattern like .subscribe(store)
+    destroy() {
+      mutations.complete();
+      stream.complete();
+    },
+    use() {
+      return useObservables(stream)[0];
+    },
+  };
 }
 
-export function createStore<T, PayloadType = {}>(defaultState:T, middleware:OperatorFunction<Mutation<T>,Mutation<T>>=identity, reducer: Reducer<T, MapToConditionalAction<PayloadType>> = s => s):Store<T, PayloadType>{
-    const mutations = new Subject<Mutation<T>>()
-    const stream = new BehaviorSubject(defaultState)
+type ObservedValueOf<T> = T extends BehaviorSubject<infer U1>
+  ? U1
+  : T extends Observable<infer U2>
+  ? (U2 | null)
+  : never;
 
-    mutations.pipe(
-        middleware,
-        scan<Mutation<T>,T>((state,mutation)=>{
-            return mutation(state)
-        },defaultState)
-    ).subscribe(stream)
+export function useObservables<T>(
+  ob: T | undefined | null
+): [ObservedValueOf<T>];
+export function useObservables<T1, T2>(
+  ob1: T1 | undefined | null,
+  ob2: T2 | undefined | null
+): [ObservedValueOf<T1>, ObservedValueOf<T2>];
+export function useObservables<T1, T2, T3>(
+  ob1: T1 | undefined | null,
+  ob2: T2 | undefined | null,
+  ob3: T3 | undefined | null
+): [ObservedValueOf<T1>, ObservedValueOf<T2>, ObservedValueOf<T3>];
+export function useObservables<T1, T2, T3, T4>(
+  ob1: T1 | undefined | null,
+  ob2: T2 | undefined | null,
+  ob3: T3 | undefined | null,
+  ob4: T4 | undefined | null
+): [
+  ObservedValueOf<T1>,
+  ObservedValueOf<T2>,
+  ObservedValueOf<T3>,
+  ObservedValueOf<T4>
+];
+export function useObservables<T1, T2, T3, T4, T5>(
+  ob1: T1 | undefined | null,
+  ob2: T2 | undefined | null,
+  ob3: T3 | undefined | null,
+  ob4: T4 | undefined | null,
+  ob5: T5 | undefined | null
+): [
+  ObservedValueOf<T1>,
+  ObservedValueOf<T2>,
+  ObservedValueOf<T3>,
+  ObservedValueOf<T4>,
+  ObservedValueOf<T5>
+];
+export function useObservables(...obs: (Observable<any> | undefined | null)[]) {
+  const [v, setV] = React.useState(() => {
+    return obs.map((x) => (x instanceof BehaviorSubject ? x.value : null));
+  });
 
-    return {
-        stream,
-        next(m){
-            mutations.next(m)
-        },
-        dispatch(action) {
-            mutations.next(state => reducer(state, action));
-        },
-        //we don't use the name `complete` because it will cause store to terminate when you use pattern like .subscribe(store)
-        destroy(){ 
-            mutations.complete()
-            stream.complete()
-        },
-        use(){
-            return useObservable(stream) || stream.value
-        }
-    }
+  React.useEffect(() => {
+    let sub = combineLatest(
+      obs.map((x) => {
+        return !x
+          ? NullObservable
+          : x instanceof BehaviorSubject
+          ? skip(1)(x)
+          : x;
+      })
+    ).subscribe((v) => {
+      setV(v);
+    });
+    return () => {
+      sub.unsubscribe();
+    };
+  }, obs);
+
+  return v;
 }
 
+const NullObservable = of(null);
+
+/**
+ * @deprecated just useEffect
+ */
 export function useSink<T>(operation:(sub:Subject<T>)=>Subscription,deps:any[]=[]):Subject<T>['next']{
     const [subject,next] = React.useMemo<[Subject<T>,Subject<T>['next']]>(()=>{
         const subject = new Subject<T>()
@@ -77,6 +161,9 @@ export function useSink<T>(operation:(sub:Subject<T>)=>Subscription,deps:any[]=[
     return next
 }
 
+/**
+ * @deprecated use useObservables
+ */
 export function useObservable<T>(ob:Observable<T>){
     const [value,setValue] = React.useState<T|null>(null)
     React.useEffect(()=>{
@@ -86,6 +173,9 @@ export function useObservable<T>(ob:Observable<T>){
     return value
 }
 
+/**
+ * @deprecated use useObservables
+ */
 export function useSource<State,Slice=State>(ob:Observable<State>,operator:(s:Observable<State>)=>Observable<Slice>=map(x=>x as any),deps:any[]=[]){
     const selected = React.useMemo(()=>{
         return ob.pipe(

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = require("tslib");
 var React = require("react");
 var rxjs_1 = require("rxjs");
 var operators_1 = require("rxjs/operators");
@@ -9,11 +8,18 @@ function createStore(defaultState, middleware, reducer) {
     if (reducer === void 0) { reducer = function (s) { return s; }; }
     var mutations = new rxjs_1.Subject();
     var stream = new rxjs_1.BehaviorSubject(defaultState);
-    mutations.pipe(middleware, operators_1.scan(function (state, mutation) {
+    mutations
+        .pipe(middleware, operators_1.scan(function (state, mutation) {
         return mutation(state);
-    }, defaultState)).subscribe(stream);
+    }, defaultState))
+        .subscribe(stream);
     return {
-        stream: stream,
+        get stream() {
+            return stream;
+        },
+        get value() {
+            return stream.value;
+        },
         next: function (m) {
             mutations.next(m);
         },
@@ -26,11 +32,40 @@ function createStore(defaultState, middleware, reducer) {
             stream.complete();
         },
         use: function () {
-            return useObservable(stream) || stream.value;
-        }
+            return useObservables(stream)[0];
+        },
     };
 }
 exports.createStore = createStore;
+function useObservables() {
+    var obs = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        obs[_i] = arguments[_i];
+    }
+    var _a = React.useState(function () {
+        return obs.map(function (x) { return (x instanceof rxjs_1.BehaviorSubject ? x.value : null); });
+    }), v = _a[0], setV = _a[1];
+    React.useEffect(function () {
+        var sub = rxjs_1.combineLatest(obs.map(function (x) {
+            return !x
+                ? NullObservable
+                : x instanceof rxjs_1.BehaviorSubject
+                    ? operators_1.skip(1)(x)
+                    : x;
+        })).subscribe(function (v) {
+            setV(v);
+        });
+        return function () {
+            sub.unsubscribe();
+        };
+    }, obs);
+    return v;
+}
+exports.useObservables = useObservables;
+var NullObservable = rxjs_1.of(null);
+/**
+ * @deprecated just useEffect
+ */
 function useSink(operation, deps) {
     if (deps === void 0) { deps = []; }
     var _a = React.useMemo(function () {
@@ -47,6 +82,9 @@ function useSink(operation, deps) {
     return next;
 }
 exports.useSink = useSink;
+/**
+ * @deprecated use useObservables
+ */
 function useObservable(ob) {
     var _a = React.useState(null), value = _a[0], setValue = _a[1];
     React.useEffect(function () {
@@ -56,12 +94,15 @@ function useObservable(ob) {
     return value;
 }
 exports.useObservable = useObservable;
+/**
+ * @deprecated use useObservables
+ */
 function useSource(ob, operator, deps) {
     if (operator === void 0) { operator = operators_1.map(function (x) { return x; }); }
     if (deps === void 0) { deps = []; }
     var selected = React.useMemo(function () {
         return ob.pipe(operator, operators_1.distinctUntilChanged(shallowEqual));
-    }, tslib_1.__spreadArrays([ob], deps));
+    }, [ob].concat(deps));
     return useObservable(selected);
 }
 exports.useSource = useSource;
