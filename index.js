@@ -46,23 +46,23 @@ function useObservables() {
         return obs.map(function (x) { return (x instanceof rxjs_1.BehaviorSubject ? x.value : null); });
     }), v = _a[0], setV = _a[1];
     React.useEffect(function () {
-        var sub = rxjs_1.combineLatest(obs.map(function (x) {
-            return !x
-                ? NullObservable
-                : x instanceof rxjs_1.BehaviorSubject
-                    ? operators_1.skip(1)(x)
-                    : x;
-        })).subscribe(function (v) {
-            setV(v);
+        var subs = obs.map(function (x, i) {
+            if (x) {
+                return (x instanceof rxjs_1.BehaviorSubject ? operators_1.skip(1)(x) : x).subscribe(function (x) {
+                    setV(function (value) {
+                        value[i] = x;
+                        return value.slice();
+                    });
+                });
+            }
         });
         return function () {
-            sub.unsubscribe();
+            subs.forEach(function (x) { return x && x.unsubscribe(); });
         };
     }, obs);
     return v;
 }
 exports.useObservables = useObservables;
-var NullObservable = rxjs_1.of(null);
 function useSink(operation, deps) {
     if (deps === void 0) { deps = []; }
     var _a = React.useMemo(function () {
@@ -101,7 +101,10 @@ function useSource(ob, operator, deps) {
 }
 exports.useSource = useSource;
 function shallowEqual(a, b) {
-    if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    if (typeof a !== "object" ||
+        a === null ||
+        typeof b !== "object" ||
+        b === null) {
         return a === b;
     }
     else {

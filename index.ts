@@ -1,6 +1,6 @@
 import * as React from "react";
-import { BehaviorSubject, combineLatest, identity, Observable, of, OperatorFunction, Subject, Subscription } from "rxjs";
-import { scan, skip, map, distinctUntilChanged } from "rxjs/operators";
+import { BehaviorSubject, identity, Observable, OperatorFunction, Subject, Subscription } from "rxjs";
+import { distinctUntilChanged, map, scan, skip } from "rxjs/operators";
 
 export type Mutation<T> = (t: T) => T;
 
@@ -77,7 +77,7 @@ export function createStore<T, PayloadType = {}>(
 type ObservedValueOf<T> = T extends BehaviorSubject<infer U1>
   ? U1
   : T extends Observable<infer U2>
-  ? (U2 | null)
+  ? U2 | null
   : never;
 
 export function useObservables<T>(
@@ -116,78 +116,88 @@ export function useObservables<T1, T2, T3, T4, T5>(
   ObservedValueOf<T4>,
   ObservedValueOf<T5>
 ];
-export function useObservables(...obs: (Observable<any> | undefined | null)[]) {
+export function useObservables(...obs: (Observable<any> | null | undefined)[]) {
   const [v, setV] = React.useState(() => {
     return obs.map((x) => (x instanceof BehaviorSubject ? x.value : null));
   });
 
   React.useEffect(() => {
-    let sub = combineLatest(
-      obs.map((x) => {
-        return !x
-          ? NullObservable
-          : x instanceof BehaviorSubject
-          ? skip(1)(x)
-          : x;
-      })
-    ).subscribe((v) => {
-      setV(v);
+    let subs = obs.map((x, i) => {
+      if (x) {
+        return (x instanceof BehaviorSubject ? skip(1)(x) : x).subscribe(
+          (x) => {
+            setV((value) => {
+              value[i] = x;
+              return value.slice();
+            });
+          }
+        );
+      }
     });
     return () => {
-      sub.unsubscribe();
+      subs.forEach((x) => x && x.unsubscribe());
     };
   }, obs);
 
   return v;
 }
 
-const NullObservable = of(null);
-
-export function useSink<T>(operation:(sub:Subject<T>)=>Subscription,deps:any[]=[]):Subject<T>['next']{
-    const [subject,next] = React.useMemo<[Subject<T>,Subject<T>['next']]>(()=>{
-        const subject = new Subject<T>()
-        return [subject,subject.next.bind(subject)]
-    },deps)
-    React.useEffect(()=>{
-        const subscription:Subscription = operation(subject)
-        return ()=>{
-            subject.complete()
-            subscription.unsubscribe() //this is to prevent leak when operation fn contains some operation like combineLatest
-        }
-    },[subject])
-    return next
+export function useSink<T>(
+  operation: (sub: Subject<T>) => Subscription,
+  deps: any[] = []
+): Subject<T>["next"] {
+  const [subject, next] = React.useMemo<[Subject<T>, Subject<T>["next"]]>(
+    () => {
+      const subject = new Subject<T>();
+      return [subject, subject.next.bind(subject)];
+    },
+    deps
+  );
+  React.useEffect(() => {
+    const subscription: Subscription = operation(subject);
+    return () => {
+      subject.complete();
+      subscription.unsubscribe(); //this is to prevent leak when operation fn contains some operation like combineLatest
+    };
+  }, [subject]);
+  return next;
 }
 
-export function useObservable<T>(ob:Observable<T>){
-    const [value,setValue] = React.useState<T|null>(null)
-    React.useEffect(()=>{
-        const sub = ob.subscribe(setValue)
-        return sub.unsubscribe.bind(sub)
-    },[ob])
-    return value
+export function useObservable<T>(ob: Observable<T>) {
+  const [value, setValue] = React.useState<T | null>(null);
+  React.useEffect(() => {
+    const sub = ob.subscribe(setValue);
+    return sub.unsubscribe.bind(sub);
+  }, [ob]);
+  return value;
 }
 
 /**
  * @deprecated use useObservables
  */
-export function useSource<State,Slice=State>(ob:Observable<State>,operator:(s:Observable<State>)=>Observable<Slice>=map(x=>x as any),deps:any[]=[]){
-    const selected = React.useMemo(()=>{
-        return ob.pipe(
-            operator,
-            distinctUntilChanged<Slice>(shallowEqual),
-        )
-    },[ob,...deps])
-    return useObservable(selected)
+export function useSource<State, Slice = State>(
+  ob: Observable<State>,
+  operator: (s: Observable<State>) => Observable<Slice> = map((x) => x as any),
+  deps: any[] = []
+) {
+  const selected = React.useMemo(() => {
+    return ob.pipe(operator, distinctUntilChanged<Slice>(shallowEqual));
+  }, [ob, ...deps]);
+  return useObservable(selected);
 }
 
-function shallowEqual(a:any,b:any){
-    if(typeof a !== 'object' || a === null || typeof b !== 'object' || b === null){
-        return a === b
-    }else{
-        const ka = Object.keys(a)
-        const kb = Object.keys(b)
-        if(ka.length !== kb.length)
-            return false
-        return ka.every(k=>a[k] === b[k])
-    }
+function shallowEqual(a: any, b: any) {
+  if (
+    typeof a !== "object" ||
+    a === null ||
+    typeof b !== "object" ||
+    b === null
+  ) {
+    return a === b;
+  } else {
+    const ka = Object.keys(a);
+    const kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k) => a[k] === b[k]);
+  }
 }
