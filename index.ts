@@ -143,9 +143,6 @@ export function useObservables(...obs: (Observable<any> | undefined | null)[]) {
 
 const NullObservable = of(null);
 
-/**
- * @deprecated just useEffect
- */
 export function useSink<T>(operation:(sub:Subject<T>)=>Subscription,deps:any[]=[]):Subject<T>['next']{
     const [subject,next] = React.useMemo<[Subject<T>,Subject<T>['next']]>(()=>{
         const subject = new Subject<T>()
@@ -161,9 +158,6 @@ export function useSink<T>(operation:(sub:Subject<T>)=>Subscription,deps:any[]=[
     return next
 }
 
-/**
- * @deprecated use useObservables
- */
 export function useObservable<T>(ob:Observable<T>){
     const [value,setValue] = React.useState<T|null>(null)
     React.useEffect(()=>{

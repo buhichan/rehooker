@@ -3,24 +3,27 @@ State management powered by rxjs and react hooks.
 
 # API
 
-- ```createStore(defaultState)```
+- ```createStore(defaultState, middleware?, reducer?)```
     - create a store with these methods:
         - `use()`
             - a hook that subscribes the latest state.
         - `stream`  
-            - get the rxjs observable of state.
+            - get the inner behavior subject of state.
+        - `value`
+            - value of inner behavior subject
         - `next(Mutation):void`
             - Mutation is (previousState)=>nextState
             - dispatch a mutation to change the current state.
+- useObservables
 
-- `useSink(operation:(sub:Subject<T>), dependencies: any[]): (value:T)=>void`
+- @deprecated @已废弃 `useSink(operation:(sub:Subject<T>), dependencies: any[]): (value:T)=>void`
     - a hook that creates a event handler which calls the underlying rxjs Subject's next()
     - `dependencies` is the underlying useEffect's second argument
 
-- `useObservable(ob:Observable<T>): T`
+- @deprecated @已废弃 `useObservable(ob:Observable<T>): T`
     - a hook which get the value of an observable
 
-- `useSource(ob:Observable<T>, operator:(ob:Observable<T>)=>Observable<T> = x=>x, dependencies: any[])`
+- @deprecated @已废弃 `useSource(ob:Observable<T>, operator:(ob:Observable<T>)=>Observable<T> = x=>x, dependencies: any[])`
     - a hook which do 3 things:
         - 1. apply the operator on an observable
         - 2. do shallow compare like react does

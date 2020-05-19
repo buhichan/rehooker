@@ -63,9 +63,6 @@ function useObservables() {
 }
 exports.useObservables = useObservables;
 var NullObservable = rxjs_1.of(null);
-/**
- * @deprecated just useEffect
- */
 function useSink(operation, deps) {
     if (deps === void 0) { deps = []; }
     var _a = React.useMemo(function () {
@@ -82,9 +79,6 @@ function useSink(operation, deps) {
     return next;
 }
 exports.useSink = useSink;
-/**
- * @deprecated use useObservables
- */
 function useObservable(ob) {
     var _a = React.useState(null), value = _a[0], setValue = _a[1];
     React.useEffect(function () {
