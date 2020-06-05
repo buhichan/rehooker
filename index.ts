@@ -46,7 +46,8 @@ export function createStore<T, PayloadType = {}>(
       middleware,
       scan<Mutation<T>, T>((state, mutation) => {
         return mutation(state);
-      }, defaultState)
+      }, defaultState),
+      distinctUntilChanged(),
     )
     .subscribe(stream);
 
@@ -163,6 +164,9 @@ export function useSink<T>(
   return next;
 }
 
+/**
+ * @deprecated use useObservables
+ */
 export function useObservable<T>(ob: Observable<T>) {
   const [value, setValue] = React.useState<T | null>(null);
   React.useEffect(() => {

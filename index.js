@@ -11,7 +11,7 @@ function createStore(defaultState, middleware, reducer) {
     mutations
         .pipe(middleware, operators_1.scan(function (state, mutation) {
         return mutation(state);
-    }, defaultState))
+    }, defaultState), operators_1.distinctUntilChanged())
         .subscribe(stream);
     return {
         get stream() {
@@ -79,6 +79,9 @@ function useSink(operation, deps) {
     return next;
 }
 exports.useSink = useSink;
+/**
+ * @deprecated use useObservables
+ */
 function useObservable(ob) {
     var _a = React.useState(null), value = _a[0], setValue = _a[1];
     React.useEffect(function () {
